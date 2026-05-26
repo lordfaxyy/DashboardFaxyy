@@ -85,14 +85,21 @@ main {
 .section-title::before { content: '≡'; font-size: 14px; opacity: 0.5; }
 
 .water-embed { margin-top: 56px; }
+.water-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
 .water-iframe {
   display: block;
   width: 100%;
-  height: 100px; /* JS will expand this to full content height */
+  height: 100px; /* JS sets the real height after load */
   border: 0;
   background: transparent;
   color-scheme: dark;
-  overflow: hidden;
 }
 @media (max-width: 480px) {
   .water-embed { margin-top: 40px; }
@@ -513,7 +520,9 @@ main {
 
   <section id="water" class="water-embed">
     <div class="section-title">Water Tracker</div>
-    <iframe src="po-water.html" class="water-iframe" loading="lazy" title="Water Tracker"></iframe>
+    <div class="water-card">
+      <iframe src="po-water.html" class="water-iframe" loading="lazy" title="Water Tracker"></iframe>
+    </div>
   </section>
 
 
@@ -1058,6 +1067,10 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {}
   }
   frame.addEventListener('load', function () {
+    try {
+      frame.contentDocument.documentElement.style.background = 'transparent';
+      frame.contentDocument.body.style.background = 'transparent';
+    } catch (e) {}
     fitFrame();
     try {
       var obs = new frame.contentWindow.MutationObserver(fitFrame);
