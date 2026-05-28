@@ -115,6 +115,19 @@
         lastSyncedJson = json;
       } catch (e) {}
     }
+    async function pull() {
+      if (!supa) return;
+      try {
+        const { data, error } = await supa.from('app_state').select('data').eq('key', appKey).maybeSingle();
+        if (!error && data && data.data && Object.keys(data.data).length > 0) {
+          const incoming = JSON.stringify(data.data);
+          if (incoming !== lastSyncedJson) {
+            lastSyncedJson = incoming;
+            applyRemote(data.data);
+          }
+        }
+      } catch (e) {}
+    }
     (async function init() {
       supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       try {
@@ -141,5 +154,7 @@
     window.addEventListener('beforeunload', flushOnUnload);
     window.addEventListener('pagehide', flushOnUnload);
     window.addEventListener('storage', (e) => { if (e.key && matches(e.key)) schedulePush(); });
+    // Re-pull on focus so changes made on another device don't get overwritten.
+    window.addEventListener('focus', () => { pull(); });
   };
 })();

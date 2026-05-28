@@ -608,37 +608,28 @@ body::after {
 .daily-goals-btn:hover { opacity: 1; color: var(--text-secondary); transform: rotate(135deg); }
 
 .daily-panel-bg {
-  position: fixed; inset: 0; z-index: 90;
-  background: rgba(0,0,0,0.55);
+  display: none; position: fixed; inset: 0; z-index: 90;
+  background: rgba(0,0,0,0.65);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.28s;
+  align-items: center; justify-content: center;
+  padding: 24px;
 }
-.daily-panel-bg.open { opacity: 1; pointer-events: all; }
+.daily-panel-bg.open { display: flex; }
 
 .daily-panel {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 91;
+  width: 100%; max-width: 420px;
   background: #111113;
-  border: 1px solid rgba(255,255,255,0.08); border-bottom: none;
-  border-radius: 22px 22px 0 0;
-  padding: 0 24px calc(max(28px, env(safe-area-inset-bottom)) + 8px);
-  max-height: 74vh; overflow-y: auto;
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  overscroll-behavior: contain;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  padding: 22px;
+  max-height: 88vh; overflow-y: auto;
 }
-.daily-panel.open { transform: translateY(0); }
 
-.daily-panel-handle {
-  width: 38px; height: 4px; border-radius: 99px;
-  background: rgba(255,255,255,0.12);
-  margin: 14px auto 0;
-}
 .daily-panel-header {
   display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 20px 0 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
   margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .daily-panel-header-left {}
 .daily-panel-title {
@@ -686,7 +677,7 @@ body::after {
 .daily-panel-input-wrap .gm-input { flex: 1; }
 
 @media (max-width: 480px) {
-  .daily-panel { padding-left: 16px; padding-right: 16px; }
+  .daily-panel-bg { padding: 16px; }
 }
 </style>
 </head>
@@ -789,21 +780,21 @@ body::after {
 </div>
 
 <!-- Daily Goals Panel -->
-<div class="daily-panel-bg" id="dailyPanelBg"></div>
-<div class="daily-panel" id="dailyPanel" role="dialog" aria-modal="true" aria-label="Daily recurring goals">
-  <div class="daily-panel-handle"></div>
-  <div class="daily-panel-header">
-    <div class="daily-panel-header-left">
-      <div class="daily-panel-title">Daily Recurring Goals</div>
-      <div class="daily-panel-subtitle">These are injected into your Today list every morning automatically.</div>
+<div class="daily-panel-bg" id="dailyPanelBg">
+  <div class="daily-panel" id="dailyPanel" role="dialog" aria-modal="true" aria-label="Daily recurring goals">
+    <div class="daily-panel-header">
+      <div class="daily-panel-header-left">
+        <div class="daily-panel-title">Daily Recurring Goals</div>
+        <div class="daily-panel-subtitle">These are injected into your Today list every morning automatically.</div>
+      </div>
+      <button type="button" id="dailyPanelClose" class="daily-panel-close" aria-label="Close">×</button>
     </div>
-    <button type="button" id="dailyPanelClose" class="daily-panel-close" aria-label="Close">×</button>
-  </div>
-  <ul id="dailyGoalList" class="daily-goal-list"></ul>
-  <div class="daily-panel-empty" id="dailyGoalEmpty">No daily goals yet — add one below.</div>
-  <div class="daily-panel-input-wrap">
-    <input id="dailyGoalInput" class="gm-input" type="text" placeholder="e.g. Go for a walk…" autocomplete="off" />
-    <button type="button" id="dailyGoalAddBtn" class="gm-add">+ Add</button>
+    <ul id="dailyGoalList" class="daily-goal-list"></ul>
+    <div class="daily-panel-empty" id="dailyGoalEmpty">No daily goals yet — add one below.</div>
+    <div class="daily-panel-input-wrap">
+      <input id="dailyGoalInput" class="gm-input" type="text" placeholder="e.g. Go for a walk…" autocomplete="off" />
+      <button type="button" id="dailyGoalAddBtn" class="gm-add">+ Add</button>
+    </div>
   </div>
 </div>
 
@@ -1463,19 +1454,19 @@ body::after {
   function openDailyPanel() {
     renderDailyPanel();
     document.getElementById('dailyPanelBg').classList.add('open');
-    document.getElementById('dailyPanel').classList.add('open');
     document.body.classList.add('topbar-modal-open');
-    setTimeout(() => document.getElementById('dailyGoalInput').focus(), 320);
+    setTimeout(() => document.getElementById('dailyGoalInput').focus(), 60);
   }
   function closeDailyPanel() {
     document.getElementById('dailyPanelBg').classList.remove('open');
-    document.getElementById('dailyPanel').classList.remove('open');
     document.body.classList.remove('topbar-modal-open');
   }
 
   document.getElementById('dailyGoalsBtn').addEventListener('click', openDailyPanel);
   document.getElementById('dailyPanelClose').addEventListener('click', closeDailyPanel);
-  document.getElementById('dailyPanelBg').addEventListener('click', closeDailyPanel);
+  document.getElementById('dailyPanelBg').addEventListener('click', (e) => {
+    if (!e.target.closest('.daily-panel')) closeDailyPanel();
+  });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDailyPanel(); });
 
   document.getElementById('dailyGoalAddBtn').addEventListener('click', () => {
