@@ -86,16 +86,26 @@
       } catch (e) {}
     }
     function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 250); }
+    function getAccessToken() {
+      try {
+        const ref = SUPABASE_URL.replace('https://', '').split('.')[0];
+        const raw = localStorage.getItem('sb-' + ref + '-auth-token');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return (parsed && parsed.access_token) || null;
+      } catch (e) { return null; }
+    }
     function flushOnUnload() {
       const state = collect();
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
+      const token = getAccessToken() || SUPABASE_KEY;
       try {
         fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates',
           },

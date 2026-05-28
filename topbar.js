@@ -192,7 +192,7 @@ body.has-bottombar {
 }
 html, body { -webkit-text-size-adjust: 100%; }
 @media (max-width: 768px) {
-  html { touch-action: pan-y; }
+  html { touch-action: pan-y pinch-zoom; }
   ::-webkit-scrollbar { width: 0; height: 0; display: none; }
   html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
@@ -371,11 +371,8 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     pushWaterMergedToSupabase(state);
   }
 
-  function blockGesture(e) { e.preventDefault(); }
   function lockGestures() {
-    document.addEventListener('gesturestart', blockGesture, { passive: false });
-    document.addEventListener('gesturechange', blockGesture, { passive: false });
-    document.addEventListener('gestureend', blockGesture, { passive: false });
+    // Prevent double-tap zoom only; pinch-zoom is intentionally allowed.
     let lastTouch = 0;
     document.addEventListener('touchend', (e) => {
       const now = Date.now();
