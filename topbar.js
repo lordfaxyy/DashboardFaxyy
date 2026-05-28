@@ -215,6 +215,10 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     overflow-y: auto !important; overscroll-behavior: contain;
   }
 }
+/* Prevent iOS auto-zoom on any input/select/textarea on mobile */
+@media (max-width: 768px) {
+  input, textarea, select, [contenteditable] { font-size: max(16px, 1em) !important; }
+}
 `;
 
   const topbarHtml = `
