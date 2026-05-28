@@ -593,6 +593,101 @@ body::after {
   .gm-card { padding: 16px; }
   .gm-progress-num { font-size: 36px; }
 }
+
+/* ===== Daily Recurring Goals ===== */
+.daily-goals-btn {
+  border: none; background: transparent;
+  color: var(--text-tertiary);
+  font-size: 14px; line-height: 1;
+  padding: 2px 6px; border-radius: 6px;
+  cursor: pointer; opacity: 0.65;
+  transition: opacity 0.2s, color 0.18s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex; align-items: center;
+  font-family: inherit;
+}
+.daily-goals-btn:hover { opacity: 1; color: var(--text-secondary); transform: rotate(135deg); }
+
+.daily-panel-bg {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s;
+}
+.daily-panel-bg.open { opacity: 1; pointer-events: all; }
+
+.daily-panel {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 91;
+  background: #111113;
+  border: 1px solid rgba(255,255,255,0.08); border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 0 24px calc(max(28px, env(safe-area-inset-bottom)) + 8px);
+  max-height: 74vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  overscroll-behavior: contain;
+}
+.daily-panel.open { transform: translateY(0); }
+
+.daily-panel-handle {
+  width: 38px; height: 4px; border-radius: 99px;
+  background: rgba(255,255,255,0.12);
+  margin: 14px auto 0;
+}
+.daily-panel-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 20px 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 16px;
+}
+.daily-panel-header-left {}
+.daily-panel-title {
+  font-size: 17px; font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.015em; margin-bottom: 4px;
+}
+.daily-panel-subtitle { font-size: 12px; color: var(--text-tertiary); line-height: 1.45; }
+.daily-panel-close {
+  border: none; background: transparent;
+  color: var(--text-tertiary); font-size: 22px; line-height: 1;
+  padding: 0 0 0 12px; cursor: pointer;
+  opacity: 0.6; transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.daily-panel-close:hover { opacity: 1; color: var(--text-primary); }
+
+.daily-goal-list { list-style: none; margin: 0 0 6px; padding: 0; }
+.daily-goal-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 13px; margin-bottom: 6px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.daily-goal-icon { font-size: 12px; color: var(--text-tertiary); flex-shrink: 0; opacity: 0.7; }
+.daily-goal-text { flex: 1; font-size: 14px; color: var(--text-primary); }
+.daily-goal-del {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-size: 18px; cursor: pointer; padding: 0 4px;
+  opacity: 0.45; transition: opacity 0.15s, color 0.15s; line-height: 1;
+}
+.daily-goal-del:hover { opacity: 1; color: var(--danger); }
+
+.daily-panel-empty {
+  text-align: center; font-size: 12px; font-style: italic;
+  color: var(--text-tertiary); padding: 18px 0;
+}
+.daily-panel-input-wrap {
+  display: flex; gap: 8px; align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 8px;
+}
+.daily-panel-input-wrap .gm-input { flex: 1; }
+
+@media (max-width: 480px) {
+  .daily-panel { padding-left: 16px; padding-right: 16px; }
+}
 </style>
 </head>
 <body>
@@ -640,7 +735,7 @@ body::after {
   </div>
 
   <div class="section">
-    <div class="section-title">To Do List</div>
+    <div class="section-title">To Do List <button type="button" id="dailyGoalsBtn" class="daily-goals-btn" title="Manage daily recurring goals">↻</button></div>
 
     <!-- TODAY -->
     <div class="gm-card" id="gmCardToday">
@@ -691,6 +786,25 @@ body::after {
     </div>
   </div>
 
+</div>
+
+<!-- Daily Goals Panel -->
+<div class="daily-panel-bg" id="dailyPanelBg"></div>
+<div class="daily-panel" id="dailyPanel" role="dialog" aria-modal="true" aria-label="Daily recurring goals">
+  <div class="daily-panel-handle"></div>
+  <div class="daily-panel-header">
+    <div class="daily-panel-header-left">
+      <div class="daily-panel-title">Daily Recurring Goals</div>
+      <div class="daily-panel-subtitle">These are injected into your Today list every morning automatically.</div>
+    </div>
+    <button type="button" id="dailyPanelClose" class="daily-panel-close" aria-label="Close">×</button>
+  </div>
+  <ul id="dailyGoalList" class="daily-goal-list"></ul>
+  <div class="daily-panel-empty" id="dailyGoalEmpty">No daily goals yet — add one below.</div>
+  <div class="daily-panel-input-wrap">
+    <input id="dailyGoalInput" class="gm-input" type="text" placeholder="e.g. Go for a walk…" autocomplete="off" />
+    <button type="button" id="dailyGoalAddBtn" class="gm-add">+ Add</button>
+  </div>
 </div>
 
 <script>
@@ -770,7 +884,7 @@ body::after {
       if (dateStr >= todayDateStr) return;
       const old = getGoals(k);
       old.forEach(g => {
-        if (!g.done && g.text && !texts.has(g.text)) {
+        if (!g.done && !g.daily && g.text && !texts.has(g.text)) {
           today.push({ text: g.text, done: false });
           texts.add(g.text);
         }
@@ -1291,8 +1405,100 @@ body::after {
     loadTomorrow
   );
 
+  // ---------- Daily Recurring Goals ----------
+  function getDailyGoals() {
+    const d = storeGet('daily_goals_v1');
+    return Array.isArray(d) ? d : [];
+  }
+  function setDailyGoals(list) {
+    try { localStorage.setItem('daily_goals_v1', JSON.stringify(list)); } catch (e) {}
+  }
+  function genId() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4); }
+
+  function injectDailyGoals() {
+    const daily = getDailyGoals();
+    if (!daily.length) return;
+    const key = todayKey();
+    const today = getGoals(key);
+    const texts = new Set(today.map(g => g.text));
+    const toAdd = daily.filter(d => !texts.has(d.text)).reverse();
+    if (!toAdd.length) return;
+    toAdd.forEach(d => today.unshift({ text: d.text, done: false, daily: true }));
+    setGoals(key, today);
+  }
+
+  function renderDailyPanel() {
+    const list    = getDailyGoals();
+    const listEl  = document.getElementById('dailyGoalList');
+    const emptyEl = document.getElementById('dailyGoalEmpty');
+    listEl.innerHTML = '';
+    emptyEl.style.display = list.length === 0 ? 'block' : 'none';
+    list.forEach(d => {
+      const li = document.createElement('li');
+      li.className = 'daily-goal-row';
+
+      const icon = document.createElement('span');
+      icon.className = 'daily-goal-icon';
+      icon.textContent = '↻';
+
+      const textEl = document.createElement('span');
+      textEl.className = 'daily-goal-text';
+      textEl.textContent = d.text;
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'daily-goal-del';
+      del.setAttribute('aria-label', 'Remove');
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        setDailyGoals(getDailyGoals().filter(x => x.id !== d.id));
+        renderDailyPanel();
+      });
+
+      li.appendChild(icon); li.appendChild(textEl); li.appendChild(del);
+      listEl.appendChild(li);
+    });
+  }
+
+  function openDailyPanel() {
+    renderDailyPanel();
+    document.getElementById('dailyPanelBg').classList.add('open');
+    document.getElementById('dailyPanel').classList.add('open');
+    document.body.classList.add('topbar-modal-open');
+    setTimeout(() => document.getElementById('dailyGoalInput').focus(), 320);
+  }
+  function closeDailyPanel() {
+    document.getElementById('dailyPanelBg').classList.remove('open');
+    document.getElementById('dailyPanel').classList.remove('open');
+    document.body.classList.remove('topbar-modal-open');
+  }
+
+  document.getElementById('dailyGoalsBtn').addEventListener('click', openDailyPanel);
+  document.getElementById('dailyPanelClose').addEventListener('click', closeDailyPanel);
+  document.getElementById('dailyPanelBg').addEventListener('click', closeDailyPanel);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDailyPanel(); });
+
+  document.getElementById('dailyGoalAddBtn').addEventListener('click', () => {
+    const input = document.getElementById('dailyGoalInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const list = getDailyGoals();
+    if (list.some(d => d.text === text)) { input.value = ''; return; }
+    list.push({ id: genId(), text });
+    setDailyGoals(list);
+    input.value = '';
+    renderDailyPanel();
+    injectDailyGoals();
+    loadToday();
+  });
+  document.getElementById('dailyGoalInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('dailyGoalAddBtn').click(); }
+    if (e.key === 'Escape') { e.preventDefault(); closeDailyPanel(); }
+  });
+
   // ---------- Boot ----------
   rollover();
+  injectDailyGoals();
   processStreak();
   loadToday();
   loadTomorrow();
@@ -1303,6 +1509,7 @@ body::after {
 
   // Re-render when storage changes from another tab (or our bridged parent).
   window.addEventListener('storage', () => {
+    injectDailyGoals();
     loadToday(); loadTomorrow(); renderStreak();
   });
 })();
@@ -1312,6 +1519,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'goals',
+    syncedKeys: ['daily_goals_v1'],
     syncedPrefixes: ['goals:'],
     onApplied: function () {
       window.dispatchEvent(new CustomEvent('goals-changed'));
