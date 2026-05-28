@@ -14,7 +14,76 @@
   const TOPBAR_SUPABASE_URL = 'https://tbrmxqpxjzvksyqyummj.supabase.co';
   const TOPBAR_SUPABASE_KEY = 'sb_publishable_TrpHX_XbUwKSq6OZuD6P6w_ZeiKYgDH';
 
-  // -------- CSS --------
+  // -------- Auth CSS --------
+  const authCss = `
+#topbar-auth-gate {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: #050506;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+.auth-card {
+  width: 100%; max-width: 360px;
+  margin: 0 20px;
+  padding: 36px 28px 32px;
+  background: #0f0f10;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+.auth-title {
+  font-size: 22px; font-weight: 700; color: #FAFAFA;
+  margin: 0 0 6px;
+  letter-spacing: -0.3px;
+}
+.auth-subtitle {
+  font-size: 14px; color: rgba(255,255,255,0.42);
+  margin: 0 0 28px;
+}
+.auth-field { margin-bottom: 14px; }
+.auth-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.auth-input {
+  width: 100%; box-sizing: border-box;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  color: #FAFAFA; font-size: 15px; font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+}
+.auth-input:focus {
+  border-color: rgba(125,211,252,0.45);
+  background: rgba(125,211,252,0.05);
+}
+.auth-input::placeholder { color: rgba(255,255,255,0.22); }
+.auth-error {
+  font-size: 13px; color: #ff8a8a;
+  margin: 0 0 16px; min-height: 18px;
+  display: none;
+}
+.auth-error.visible { display: block; }
+.auth-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, rgba(125,211,252,0.28), rgba(110,231,183,0.28));
+  border: 1px solid rgba(125,211,252,0.24);
+  border-radius: 12px;
+  color: #FAFAFA; font-size: 15px; font-weight: 600; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.01em;
+  transition: background 0.15s, transform 0.10s;
+  -webkit-tap-highlight-color: transparent;
+}
+.auth-btn:hover { background: linear-gradient(135deg, rgba(125,211,252,0.40), rgba(110,231,183,0.40)); }
+.auth-btn:active { transform: scale(0.98); }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+  // -------- Main topbar/bottombar CSS --------
   const css = `
 .topbar {
   position: sticky; top: 0; z-index: 40;
@@ -344,9 +413,99 @@ body.topbar-modal-open { overflow: hidden; touch-action: none; }
     setInterval(render, 30 * 1000);
   }
 
+  // -------- Auth gate --------
+  function showAuthForm(gate, supa) {
+    gate.innerHTML = `
+<div class="auth-card">
+  <p class="auth-title">Faxyys Dashboard</p>
+  <p class="auth-subtitle">Sign in to continue</p>
+  <div class="auth-field">
+    <label class="auth-label" for="auth-email">EMAIL</label>
+    <input class="auth-input" id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" />
+  </div>
+  <div class="auth-field">
+    <label class="auth-label" for="auth-password">PASSWORD</label>
+    <input class="auth-input" id="auth-password" type="password" autocomplete="current-password" placeholder="••••••••" />
+  </div>
+  <p class="auth-error" id="auth-error"></p>
+  <button class="auth-btn" id="auth-submit" type="button">Sign in</button>
+</div>`;
+
+    const emailEl = gate.querySelector('#auth-email');
+    const passEl  = gate.querySelector('#auth-password');
+    const errEl   = gate.querySelector('#auth-error');
+    const btnEl   = gate.querySelector('#auth-submit');
+
+    function showError(msg) {
+      errEl.textContent = msg;
+      errEl.classList.add('visible');
+    }
+    function clearError() { errEl.classList.remove('visible'); }
+
+    async function doSignIn() {
+      clearError();
+      const email = emailEl.value.trim();
+      const password = passEl.value;
+      if (!email || !password) { showError('Please enter your email and password.'); return; }
+      btnEl.disabled = true;
+      btnEl.textContent = 'Signing in…';
+      try {
+        const { error } = await supa.auth.signInWithPassword({ email, password });
+        if (error) {
+          showError(error.message || 'Sign in failed. Check your credentials.');
+          btnEl.disabled = false;
+          btnEl.textContent = 'Sign in';
+        } else {
+          gate.remove();
+          boot();
+        }
+      } catch (e) {
+        showError('Network error. Please try again.');
+        btnEl.disabled = false;
+        btnEl.textContent = 'Sign in';
+      }
+    }
+
+    emailEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); passEl.focus(); } });
+    passEl.addEventListener('keydown',  (e) => { if (e.key === 'Enter') { e.preventDefault(); doSignIn(); } });
+    btnEl.addEventListener('click', doSignIn);
+
+    setTimeout(() => emailEl.focus(), 80);
+  }
+
+  async function init() {
+    if (isEmbedded()) { boot(); return; }
+
+    const authStyle = document.createElement('style');
+    authStyle.textContent = authCss;
+    document.head.appendChild(authStyle);
+
+    const gate = document.createElement('div');
+    gate.id = 'topbar-auth-gate';
+    document.body.appendChild(gate);
+
+    if (!window.supabase) { showAuthForm(gate, null); return; }
+
+    let supa;
+    try { supa = window.supabase.createClient(TOPBAR_SUPABASE_URL, TOPBAR_SUPABASE_KEY); }
+    catch (e) { showAuthForm(gate, null); return; }
+
+    try {
+      const { data } = await supa.auth.getSession();
+      if (data && data.session) {
+        gate.remove();
+        boot();
+      } else {
+        showAuthForm(gate, supa);
+      }
+    } catch (e) {
+      showAuthForm(gate, supa);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
-    boot();
+    init();
   }
 })();
